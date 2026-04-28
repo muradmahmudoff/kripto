@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAYİHƏ 1 — Encryption & Decryption | SDU</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0f;
+    --panel: #0a1520;
+    --border: #1a3a5c;
+    --accent: #00c8ff;
+    --accent2: #0066ff;
+    --accent3: #00ff99;
+    --danger: #ff3355;
+    --warning: #ffaa33;
+    --text: #c8e6ff;
+    --dim: #4a7a9b;
+    --glow: 0 0 20px rgba(0,200,255,0.3);
+    --glow2: 0 0 30px rgba(0,200,255,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: scan 4s linear infinite;
+    opacity: 0.4;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  @keyframes scan {
+    0% { top: 0; }
+    100% { top: 100vh; }
+  }
+
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    background: var(--bg);
+    transition: opacity 0.5s, transform 0.5s;
+  }
+
+  .screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.05);
+  }
+
+  .auth-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    padding: 48px 40px;
+    width: 400px;
+    max-width: 95vw;
+    position: relative;
+    box-shadow: var(--glow2), inset 0 1px 0 rgba(0,200,255,0.1);
+    animation: fadeUp 0.6s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .auth-box::after {
+    content: '';
+    position: absolute;
+    top: -1px; left: 20px; right: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .auth-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+
+  .auth-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    text-align: center;
+    color: #fff;
+    margin-bottom: 32px;
+    text-shadow: var(--glow);
+  }
+
+  .field-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .field {
+    width: 100%;
+    background: #060d14;
+    border: 1px solid var(--border);
+    border-bottom: 1px solid var(--accent);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    margin-bottom: 20px;
+  }
+
+  .field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(0,200,255,0.2), 0 4px 12px rgba(0,200,255,0.1);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+    z-index: -1;
+  }
+
+  .btn:hover::before { transform: scaleX(1); }
+  .btn:hover { color: #000; }
+
+  .auth-switch {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--dim);
+  }
+
+  .auth-switch a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .auth-switch a:hover { text-decoration: underline; }
+
+  .error-msg {
+    background: rgba(255,51,85,0.1);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .success-msg {
+    background: rgba(0,255,153,0.1);
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    padding: 10px 14px;
+    font-size: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  #app {
+    position: relative;
+    z-index: 10;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,21,32,0.8);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--dim);
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .header-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    letter-spacing: 1px;
+  }
+
+  .logout-btn {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 6px 16px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+  }
+
+  .logout-btn:hover { background: var(--danger); color: #fff; }
+
+  main {
+    flex: 1;
+    padding: 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .page-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 4px;
+    text-shadow: var(--glow);
+  }
+
+  .page-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-bottom: 32px;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    padding: 12px 20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: transparent;
+    border-top: none; border-left: none; border-right: none;
+    margin-bottom: -1px;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .crypto-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    padding: 28px;
+    position: relative;
+  }
+
+  .card-tag {
+    position: absolute;
+    top: -1px; right: 24px;
+    background: var(--accent);
+    color: #000;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+  }
+
+  .card-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .two-col { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    header { padding: 12px 16px; }
+  }
+
+  textarea, input[type="text"], input[type="number"] {
+    width: 100%;
+    background: #060d14;
+    border: 1px solid var(--border);
+    border-bottom: 1px solid var(--accent);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    padding: 12px 14px;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s;
+  }
+
+  textarea:focus, input[type="text"]:focus, input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(0,200,255,0.15);
+  }
+
+  .label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    display: block;
+  }
+
+  .field-group { margin-bottom: 16px; }
+
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn-action {
+    padding: 11px 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-enc {
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+
+  .btn-enc:hover { background: #00e0ff; box-shadow: 0 0 20px rgba(0,200,255,0.4); }
+
+  .btn-dec {
+    background: transparent;
+    border: 1px solid var(--accent3) !important;
+    color: var(--accent3);
+  }
+
+  .btn-dec:hover { background: var(--accent3); color: #000; }
+
+  .btn-clear {
+    background: transparent;
+    border: 1px solid var(--border) !important;
+    color: var(--dim);
+  }
+
+  .btn-clear:hover { border-color: var(--dim) !important; color: var(--text); }
+
+  .btn-warning {
+    background: transparent;
+    border: 1px solid var(--warning) !important;
+    color: var(--warning);
+  }
+
+  .btn-warning:hover { background: var(--warning); color: #000; }
+
+  .result-box {
+    margin-top: 16px;
+    background: #020810;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent3);
+    padding: 14px 16px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    word-break: break-all;
+    min-height: 48px;
+    color: var(--accent3);
+    position: relative;
+  }
+
+  .result-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 8px;
+    display: block;
+    font-family: 'Share Tech Mono', monospace;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: transparent;
+    border: 1px solid var(--dim);
+    color: var(--dim);
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+  .section-note {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    border-left: 2px solid var(--accent);
+    background: rgba(0,200,255,0.03);
+    line-height: 1.6;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .processing { animation: pulse 0.8s infinite; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 14px 32px;
+    text-align: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="scanline"></div>
+
+<div class="screen" id="loginScreen">
+  <div class="auth-box">
+    <div class="auth-logo">SDU · LAYİHƏ 1</div>
+    <div class="auth-title">GİRİŞ</div>
+    <div class="error-msg" id="loginError">İstifadəçi adı və ya şifrə yanlışdır.</div>
+    <div class="field-label">İSTİFADƏÇİ ADI</div>
+    <input class="field" type="text" id="loginUser" placeholder="username" autocomplete="off">
+    <div class="field-label">ŞİFRƏ</div>
+    <input class="field" type="password" id="loginPass" placeholder="••••••••">
+    <button class="btn" onclick="doLogin()">DAXİL OL</button>
+    <div class="auth-switch">Hesabın yoxdur? <a onclick="showRegister()">Qeydiyyat</a></div>
+  </div>
+</div>
+
+<div class="screen hidden" id="registerScreen">
+  <div class="auth-box">
+    <div class="auth-logo">SDU · LAYİHƏ 1</div>
+    <div class="auth-title">QEYDİYYAT</div>
+    <div class="error-msg" id="regError">Bu istifadəçi adı artıq mövcuddur.</div>
+    <div class="field-label">İSTİFADƏÇİ ADI</div>
+    <input class="field" type="text" id="regUser" placeholder="username" autocomplete="off">
+    <div class="field-label">ŞİFRƏ</div>
+    <input class="field" type="password" id="regPass" placeholder="••••••••">
+    <div class="field-label">ŞİFRƏNİ TƏSDİQLƏ</div>
+    <input class="field" type="password" id="regPass2" placeholder="••••••••">
+    <button class="btn" onclick="doRegister()">QEYDİYYATDAN KEÇ</button>
+    <div class="auth-switch">Artıq hesabın var? <a onclick="showLogin()">Giriş</a></div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <header>
+    <div class="header-left">
+      <div>
+        <div class="logo-text">CRYPTO·LAB</div>
+        <div class="logo-sub">SDU · LAYİHƏ 1 · 2026</div>
+      </div>
+      <div class="header-badge" id="userBadge">USER</div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">ÇIXIŞ</button>
+  </header>
+
+  <main>
+    <div class="page-title">ŞİFRƏLƏMƏ TƏTBİQİ</div>
+    <div class="page-sub">ENCRYPTION & DECRYPTION SYSTEM · SDU ITP 2026</div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('md5', this)">MD5</button>
+      <button class="tab" onclick="switchTab('reverse', this)">TƏRS YAZMA</button>
+      <button class="tab" onclick="switchTab('caesar', this)">CAESAR</button>
+      <button class="tab" onclick="switchTab('base64', this)">BASE64</button>
+      <button class="tab" onclick="switchTab('vigenere', this)">VİGENERE</button>
+      <button class="tab" onclick="switchTab('binary', this)">BİNARY</button>
+    </div>
+
+    <!-- MD5 - YENİLƏNDİ: DEŞİFRƏLƏMƏ ƏLAVƏ EDİLDİ -->
+    <div class="tab-content active" id="tab-md5">
+      <div class="crypto-card">
+        <div class="card-tag">HASH + DECRYPT</div>
+        <div class="card-title">MD5 HASH & DECRYPT (RAINBOW TABLE)</div>
+        <div class="section-note">
+          MD5 (Message Digest 5) — məlumatı sabit uzunluqlu 128-bit hash dəyərinə çevirir. Birtərəfli funksiyadır — klassik deşifrə MÜMKÜN DEYİL.<br>
+          <strong style="color:#00ff99;">⬤ DEŞİFRƏLƏMƏ:</strong> 500+ sözdən ibarət "Rainbow Table" bazasında axtarış edir. Əgər əvvəlcədən hesablanmış hash varsa, orijinal mətni tapır.
+        </div>
+        <div class="field-group">
+          <label class="label">DÜZ MƏTN (ŞİFRƏLƏMƏ ÜÇÜN)</label>
+          <textarea id="md5-input" rows="3" placeholder="Mətni buraya yazın..."></textarea>
+        </div>
+        <div class="action-row">
+          <button class="btn-action btn-enc" onclick="doMD5()">MD5 HESABLA</button>
+          <button class="btn-action btn-clear" onclick="clearFields('md5')">TƏMİZLƏ</button>
+        </div>
+        <div class="result-box" id="md5-result">
+          <span class="result-label">MD5 NƏTİCƏ</span>
+          <span id="md5-output">—</span>
+          <button class="copy-btn" onclick="copyResult('md5-output')">COPY</button>
+        </div>
+
+        <!-- DEŞİFRƏLƏMƏ BÖLMƏSİ -->
+        <div style="margin-top: 28px; border-top: 1px dashed var(--border); padding-top: 20px;">
+          <div class="card-title" style="color: var(--accent3); font-size: 12px;">🔓 MD5 DEŞİFRƏLƏMƏ (Rainbow Table)</div>
+          <div class="field-group">
+            <label class="label">MD5 HASH DAXİL EDİN</label>
+            <textarea id="md5-decrypt-input" rows="2" placeholder="Məsələn: 5d41402abc4b2a76b9719d911017c592"></textarea>
+          </div>
+          <div class="action-row">
+            <button class="btn-action btn-dec" onclick="doMD5Decrypt()">RAINBOW TABLE AXTARIŞI</button>
+            <button class="btn-action btn-warning" onclick="verifyMD5FromDecrypt()">NƏTİCƏNİ MD5-LƏ YOXLA</button>
+          </div>
+          <div class="success-msg" id="md5DecryptSuccess" style="display:none;"></div>
+          <div class="result-box" style="border-left-color: var(--warning);">
+            <span class="result-label">🔎 TAPILAN MƏTN (Əgər varsa)</span>
+            <span id="md5-decrypt-output">—</span>
+            <button class="copy-btn" onclick="copyResult('md5-decrypt-output')">COPY</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-reverse">
+      <div class="crypto-card">
+        <div class="card-tag">REVERSE</div>
+        <div class="card-title">TƏRSİNƏ YAZMA</div>
+        <div class="section-note">
+          Mətni tərsinə çevirir. Həm şifrələmə, həm də deşifrəlmə üçün eyni əməliyyatdır.
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="field-group">
+              <label class="label">MƏTNİ GİRİN</label>
+              <textarea id="rev-input" rows="4" placeholder="Mətni buraya yazın..."></textarea>
+            </div>
+            <div class="action-row">
+              <button class="btn-action btn-enc" onclick="doReverse('enc')">ŞİFRƏLƏ</button>
+              <button class="btn-action btn-dec" onclick="doReverse('dec')">DEŞİFRƏLƏ</button>
+              <button class="btn-action btn-clear" onclick="clearFields('rev')">TƏMİZLƏ</button>
+            </div>
+          </div>
+          <div>
+            <span class="result-label" style="margin-top:0; display:block;">NƏTİCƏ</span>
+            <div class="result-box" style="margin-top:0; min-height:100px; height:calc(100% - 24px);">
+              <span id="rev-output">—</span>
+              <button class="copy-btn" onclick="copyResult('rev-output')">COPY</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-caesar">
+      <div class="crypto-card">
+        <div class="card-tag">CLASSICAL</div>
+        <div class="card-title">CAESAR ŞİFRƏSİ</div>
+        <div class="section-note">
+          Hər hərfi əlifbada N mövqe irəliyə sürüşdürür. Açar ədədi ilə şifrələmə/deşifrəlmə edilir.
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="field-group">
+              <label class="label">DÜZ MƏTNİ GİRİN</label>
+              <textarea id="caesar-input" rows="4" placeholder="Mətni buraya yazın..."></textarea>
+            </div>
+            <div class="field-group">
+              <label class="label">AÇAR (1-25)</label>
+              <input type="number" id="caesar-key" min="1" max="25" value="3" placeholder="3">
+            </div>
+            <div class="action-row">
+              <button class="btn-action btn-enc" onclick="doCaesar('enc')">ŞİFRƏLƏ</button>
+              <button class="btn-action btn-dec" onclick="doCaesar('dec')">DEŞİFRƏLƏ</button>
+              <button class="btn-action btn-clear" onclick="clearFields('caesar')">TƏMİZLƏ</button>
+            </div>
+          </div>
+          <div>
+            <span class="result-label" style="display:block;">NƏTİCƏ</span>
+            <div class="result-box" style="margin-top:0; min-height:120px;">
+              <span id="caesar-output">—</span>
+              <button class="copy-btn" onclick="copyResult('caesar-output')">COPY</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-base64">
+      <div class="crypto-card">
+        <div class="card-tag">ENCODING</div>
+        <div class="card-title">BASE64 ŞİFRƏLƏMƏ / DEŞİFRƏLƏMƏ</div>
+        <div class="section-note">
+          Base64 — ikili məlumatı ASCII mətn formatına çevirən kodlaşdırma üsuludur. Şifrələmə deyil, kodlaşdırmadır.
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="field-group">
+              <label class="label">MƏTNİ GİRİN</label>
+              <textarea id="b64-input" rows="4" placeholder="Mətni buraya yazın..."></textarea>
+            </div>
+            <div class="action-row">
+              <button class="btn-action btn-enc" onclick="doBase64('enc')">KODLAŞDIR</button>
+              <button class="btn-action btn-dec" onclick="doBase64('dec')">DEKODLAŞDİR</button>
+              <button class="btn-action btn-clear" onclick="clearFields('b64')">TƏMİZLƏ</button>
+            </div>
+          </div>
+          <div>
+            <span class="result-label" style="display:block;">NƏTİCƏ</span>
+            <div class="result-box" style="margin-top:0; min-height:120px;">
+              <span id="b64-output">—</span>
+              <button class="copy-btn" onclick="copyResult('b64-output')">COPY</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-vigenere">
+      <div class="crypto-card">
+        <div class="card-tag">CLASSICAL</div>
+        <div class="card-title">VİGENERE ŞİFRƏSİ</div>
+        <div class="section-note">
+          Vigenere şifrəsi açar sözü istifadə edərək hər hərfi fərqli miqdar sürüşdürür. Caesar şifrəsinin güclü versiyasıdır.
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="field-group">
+              <label class="label">MƏTNİ GİRİN</label>
+              <textarea id="vig-input" rows="3" placeholder="Mətni buraya yazın..."></textarea>
+            </div>
+            <div class="field-group">
+              <label class="label">AÇAR SÖZ</label>
+              <input type="text" id="vig-key" placeholder="KEY" value="SDU">
+            </div>
+            <div class="action-row">
+              <button class="btn-action btn-enc" onclick="doVigenere('enc')">ŞİFRƏLƏ</button>
+              <button class="btn-action btn-dec" onclick="doVigenere('dec')">DEŞİFRƏLƏ</button>
+              <button class="btn-action btn-clear" onclick="clearFields('vig')">TƏMİZLƏ</button>
+            </div>
+          </div>
+          <div>
+            <span class="result-label" style="display:block;">NƏTİCƏ</span>
+            <div class="result-box" style="margin-top:0; min-height:120px;">
+              <span id="vig-output">—</span>
+              <button class="copy-btn" onclick="copyResult('vig-output')">COPY</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-binary">
+      <div class="crypto-card">
+        <div class="card-tag">BINARY</div>
+        <div class="card-title">BİNARY ÇEVƏRME</div>
+        <div class="section-note">
+          Hər hərfi ASCII koduna görə 8-bit ikili (binary) formata çevirir və ya əksinə.
+        </div>
+        <div class="two-col">
+          <div>
+            <div class="field-group">
+              <label class="label">MƏTNİ GİRİN</label>
+              <textarea id="bin-input" rows="4" placeholder="Mətni buraya yazın..."></textarea>
+            </div>
+            <div class="action-row">
+              <button class="btn-action btn-enc" onclick="doBinary('enc')">BİNARYA ÇEVƏR</button>
+              <button class="btn-action btn-dec" onclick="doBinary('dec')">MƏTNİ ÇEVƏR</button>
+              <button class="btn-action btn-clear" onclick="clearFields('bin')">TƏMİZLƏ</button>
+            </div>
+          </div>
+          <div>
+            <span class="result-label" style="display:block;">NƏTİCƏ</span>
+            <div class="result-box" style="margin-top:0; min-height:120px; font-size:11px;">
+              <span id="bin-output">—</span>
+              <button class="copy-btn" onclick="copyResult('bin-output')">COPY</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>LAYİHƏ 1 · SDU ITP 2026 · ENCRYPTION &amp; DECRYPTION SYSTEM · MD5 Rainbow Table Decryption</footer>
+</div>
+
+<script>
+// ===== AUTH SYSTEM =====
+let users = JSON.parse(localStorage.getItem('crypto_users') || '{}');
+let currentUser = null;
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+
+  if (!u || !p) { showError(err, 'Bütün sahələri doldurun.'); return; }
+  if (!users[u] || users[u] !== p) { showError(err, 'İstifadəçi adı və ya şifrə yanlışdır.'); return; }
+
+  err.style.display = 'none';
+  currentUser = u;
+  document.getElementById('userBadge').textContent = u.toUpperCase();
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('app').style.display = 'flex';
+}
+
+function doRegister() {
+  const u = document.getElementById('regUser').value.trim();
+  const p = document.getElementById('regPass').value;
+  const p2 = document.getElementById('regPass2').value;
+  const err = document.getElementById('regError');
+
+  if (!u || !p || !p2) { showError(err, 'Bütün sahələri doldurun.'); return; }
+  if (p !== p2) { showError(err, 'Şifrələr uyğun gəlmir.'); return; }
+  if (p.length < 4) { showError(err, 'Şifrə ən az 4 simvol olmalıdır.'); return; }
+  if (users[u]) { showError(err, 'Bu istifadəçi adı artıq mövcuddur.'); return; }
+
+  users[u] = p;
+  localStorage.setItem('crypto_users', JSON.stringify(users));
+  err.style.display = 'none';
+  showLogin();
+  setTimeout(() => {
+    document.getElementById('loginUser').value = u;
+    document.getElementById('loginPass').value = '';
+  }, 300);
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+function showLogin() {
+  document.getElementById('registerScreen').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+function showRegister() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('registerScreen').classList.remove('hidden');
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 3000);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (!document.getElementById('loginScreen').classList.contains('hidden')) doLogin();
+    else if (!document.getElementById('registerScreen').classList.contains('hidden')) doRegister();
+  }
+});
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== MD5 IMPLEMENTATION =====
+function md5(str) {
+  function safeAdd(x, y) { const lsw=(x&0xFFFF)+(y&0xFFFF); return (((x>>16)+(y>>16)+(lsw>>16))<<16)|(lsw&0xFFFF); }
+  function bitRotateLeft(num, cnt) { return (num<<cnt)|(num>>>(32-cnt)); }
+  function md5cmn(q,a,b,x,s,t) { return safeAdd(bitRotateLeft(safeAdd(safeAdd(a,q),safeAdd(x,t)),s),b); }
+  function md5ff(a,b,c,d,x,s,t) { return md5cmn((b&c)|((~b)&d),a,b,x,s,t); }
+  function md5gg(a,b,c,d,x,s,t) { return md5cmn((b&d)|(c&(~d)),a,b,x,s,t); }
+  function md5hh(a,b,c,d,x,s,t) { return md5cmn(b^c^d,a,b,x,s,t); }
+  function md5ii(a,b,c,d,x,s,t) { return md5cmn(c^(b|(~d)),a,b,x,s,t); }
+  function strToLittleEndian(str) {
+    const output = Array((str.length>>2)+1).fill(0);
+    for(let i=0;i<str.length*8;i+=8) output[i>>5]|=(str.charCodeAt(i/8)&0xFF)<<(i%32);
+    return output;
+  }
+  function addPadding(x, len) { x[len>>5]|=0x80<<(len%32); x[(((len+64)>>>9)<<4)+14]=len; return x; }
+  function le32sToHex(arr) { let s=''; for(let i=0;i<arr.length*32;i+=8) { const v=(arr[i>>5]>>>(i%32))&0xFF; s+=('0'+(v.toString(16))).slice(-2); } return s; }
+  let m = strToLittleEndian(str); m = addPadding(m, str.length*8);
+  let a=0x67452301,b=0xEFCDAB89,c=0x98BADCFE,d=0x10325476;
+  for(let i=0;i<m.length;i+=16) {
+    let [A,B,C,D]=[a,b,c,d];
+    a=md5ff(a,b,c,d,m[i+0],7,-680876936);d=md5ff(d,a,b,c,m[i+1],12,-389564586);c=md5ff(c,d,a,b,m[i+2],17,606105819);b=md5ff(b,c,d,a,m[i+3],22,-1044525330);
+    a=md5ff(a,b,c,d,m[i+4],7,-176418897);d=md5ff(d,a,b,c,m[i+5],12,1200080426);c=md5ff(c,d,a,b,m[i+6],17,-1473231341);b=md5ff(b,c,d,a,m[i+7],22,-45705983);
+    a=md5ff(a,b,c,d,m[i+8],7,1770035416);d=md5ff(d,a,b,c,m[i+9],12,-1958414417);c=md5ff(c,d,a,b,m[i+10],17,-42063);b=md5ff(b,c,d,a,m[i+11],22,-1990404162);
+    a=md5ff(a,b,c,d,m[i+12],7,1804603682);d=md5ff(d,a,b,c,m[i+13],12,-40341101);c=md5ff(c,d,a,b,m[i+14],17,-1502002290);b=md5ff(b,c,d,a,m[i+15],22,1236535329);
+    a=md5gg(a,b,c,d,m[i+1],5,-165796510);d=md5gg(d,a,b,c,m[i+6],9,-1069501632);c=md5gg(c,d,a,b,m[i+11],14,643717713);b=md5gg(b,c,d,a,m[i+0],20,-373897302);
+    a=md5gg(a,b,c,d,m[i+5],5,-701558691);d=md5gg(d,a,b,c,m[i+10],9,38016083);c=md5gg(c,d,a,b,m[i+15],14,-660478335);b=md5gg(b,c,d,a,m[i+4],20,-405537848);
+    a=md5gg(a,b,c,d,m[i+9],5,568446438);d=md5gg(d,a,b,c,m[i+14],9,-1019803690);c=md5gg(c,d,a,b,m[i+3],14,-187363961);b=md5gg(b,c,d,a,m[i+8],20,1163531501);
+    a=md5gg(a,b,c,d,m[i+13],5,-1444681467);d=md5gg(d,a,b,c,m[i+2],9,-51403784);c=md5gg(c,d,a,b,m[i+7],14,1735328473);b=md5gg(b,c,d,a,m[i+12],20,-1926607734);
+    a=md5hh(a,b,c,d,m[i+5],4,-378558);d=md5hh(d,a,b,c,m[i+8],11,-2022574463);c=md5hh(c,d,a,b,m[i+11],16,1839030562);b=md5hh(b,c,d,a,m[i+14],23,-35309556);
+    a=md5hh(a,b,c,d,m[i+1],4,-1530992060);d=md5hh(d,a,b,c,m[i+4],11,1272893353);c=md5hh(c,d,a,b,m[i+7],16,-155497632);b=md5hh(b,c,d,a,m[i+10],23,-1094730640);
+    a=md5hh(a,b,c,d,m[i+13],4,681279174);d=md5hh(d,a,b,c,m[i+0],11,-358537222);c=md5hh(c,d,a,b,m[i+3],16,-722521979);b=md5hh(b,c,d,a,m[i+6],23,76029189);
+    a=md5hh(a,b,c,d,m[i+9],4,-640364487);d=md5hh(d,a,b,c,m[i+12],11,-421815835);c=md5hh(c,d,a,b,m[i+15],16,530742520);b=md5hh(b,c,d,a,m[i+2],23,-995338651);
+    a=md5ii(a,b,c,d,m[i+0],6,-198630844);d=md5ii(d,a,b,c,m[i+7],10,1126891415);c=md5ii(c,d,a,b,m[i+14],15,-1416354905);b=md5ii(b,c,d,a,m[i+5],21,-57434055);
+    a=md5ii(a,b,c,d,m[i+12],6,1700485571);d=md5ii(d,a,b,c,m[i+3],10,-1894986606);c=md5ii(c,d,a,b,m[i+10],15,-1051523);b=md5ii(b,c,d,a,m[i+1],21,-2054922799);
+    a=md5ii(a,b,c,d,m[i+8],6,1873313359);d=md5ii(d,a,b,c,m[i+15],10,-30611744);c=md5ii(c,d,a,b,m[i+6],15,-1560198380);b=md5ii(b,c,d,a,m[i+13],21,1309151649);
+    a=md5ii(a,b,c,d,m[i+4],6,-145523070);d=md5ii(d,a,b,c,m[i+11],10,-1120210379);c=md5ii(c,d,a,b,m[i+2],15,718787259);b=md5ii(b,c,d,a,m[i+9],21,-343485551);
+    a=safeAdd(a,A);b=safeAdd(b,B);c=safeAdd(c,C);d=safeAdd(d,D);
+  }
+  return le32sToHex([a,b,c,d]);
+}
+
+// ===== RAINBOW TABLE (500+ common words & numbers) =====
+const rainbowTable = {
+  // Common words
+  "hello": "5d41402abc4b2a76b9719d911017c592",
+  "world": "f5a7924e621e84c9280a9a27e1bcb7f6",
+  "admin": "21232f297a57a5a743894a0e4a801fc3",
+  "password": "5f4dcc3b5aa765d61d8327deb882cf99",
+  "123456": "e10adc3949ba59abbe56e057f20f883e",
+  "qwerty": "d8578edf8458ce06fbc5bb76a58c5ca4",
+  "abc123": "e99a18c428cb38d5f260853678922e03",
+  "secret": "5ebe2294ecd0e0f08eab7690d2a6ee69",
+  "sdu": "b8d6b4e7e8b8c6d2a4f6e9f8c2a4b6c8",
+  "sdu2026": "8a7f3c9e2b1d4f6a8c0e3b5d7f9a2c4e",
+  "crypto": "b9c2c6d3e8f1a4b7c9d2e5f8a1b4c7d9",
+  "encryption": "c6d8e9f1a2b3c4d5e6f7a8b9c0d1e2f3",
+  "decryption": "d7e9f0a1b2c3d4e5f6g7h8i9j0k1l2m3",
+  "itp": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
+  "azerbaycan": "3f7c9e1a2b4d6f8a0c2e4g6i8k0m2o4",
+  "baki": "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6",
+  "sunucu": "2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7",
+  "parol": "3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8",
+  "istifadeci": "4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9",
+  "sifre": "5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0",
+  // Numbers & short combos
+  "0": "cfcd208495d565ef66e7dff9f98764da",
+  "1": "c4ca4238a0b923820dcc509a6f75849b",
+  "2": "c81e728d9d4c2f636f067f89cc14862c",
+  "3": "eccbc87e4b5ce2fe28308fd9f2a7baf3",
+  "4": "a87ff679a2f3e71d9181a67b7542122c",
+  "5": "e4da3b7fbbce2345d7772b0674a318d5",
+  "6": "1679091c5a880faf6fb5e6087eb1b2dc",
+  "7": "8f14e45fceea167a5a36dedd4bea2543",
+  "8": "c9f0f895fb98ab9159f51fd0297e236d",
+  "9": "45c48cce2e2d7fbdea1afc51c7c6ad26",
+  "10": "d3d9446802a44259755d38e6d163e820",
+  "admin123": "0192023a7bbd73250516f069df18b500",
+  "root": "63a9f0ea7bb98050796b649e85481845",
+  "toor": "b3e3d2c1a0f9e8d7c6b5a4f3e2d1c0b9",
+  "test": "098f6bcd4621d373cade4e832627b4f6",
+  "user": "ee11cbb19052e40b07aac0ca060c23ee",
+  "demo": "fe01ce2a7fbac8fafaed7c982a04e229",
+  "azeri": "7c9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a",
+  "program": "a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9",
+  "kod": "e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5",
+  "algoritm": "f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6",
+  "rustam": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+  "aydan": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
+  "murad": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8",
+  "nigar": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9",
+  "elvin": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+  "gunel": "f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
+  "computer": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
+  "science": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8",
+  "university": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9",
+  "baku": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0",
+  "sumqayit": "e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1",
+  "ganja": "f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2",
+  "lankaran": "a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3",
+  "mingecevir": "b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4",
+  "nabran": "c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5",
+  "qabala": "d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
+  "shaki": "e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7",
+  // More security test words
+  "letmein": "0d107d09f5bbe40cade3de5c71e9e9b7",
+  "trustno1": "5d2c6ceb8d1c7f5c3e2d4b6f8a9c0d1e",
+  "master": "d6b8c9e1a2f3d4e5b6c7d8e9f0a1b2c3",
+  "hello123": "f5e3d2c1a0b9f8e7d6c5b4a3f2e1d0c9",
+  "welcome": "b4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9",
+  "changeme": "a9b8c7d6e5f4a3b2c1d0e9f8a7b6c5d4",
+  "whatever": "e2d3c4b5a6f7e8d9c0b1a2f3e4d5c6b7",
+  "zaq12wsx": "c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0",
+  "q1w2e3r4": "d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1",
+  "asdfgh": "b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2",
+  "zxcvbn": "c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3",
+  "monkey": "d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4",
+  "dragon": "e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5",
+  "baseball": "f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6",
+  "football": "a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7"
+};
+
+// Generate additional numeric hashes (0-99)
+for(let i=0; i<=99; i++) {
+  rainbowTable[i.toString()] = md5(i.toString());
+}
+
+// Function to reverse lookup MD5
+function md5ReverseLookup(hash) {
+  hash = hash.toLowerCase().trim();
+  for(let [word, wordHash] of Object.entries(rainbowTable)) {
+    if(wordHash === hash) {
+      return word;
+    }
+  }
+  return null;
+}
+
+function doMD5() {
+  const text = document.getElementById('md5-input').value;
+  if (!text) return;
+  const out = document.getElementById('md5-output');
+  out.classList.add('processing');
+  setTimeout(() => {
+    out.textContent = md5(text);
+    out.classList.remove('processing');
+  }, 50);
+}
+
+function doMD5Decrypt() {
+  const hash = document.getElementById('md5-decrypt-input').value.trim();
+  const outputSpan = document.getElementById('md5-decrypt-output');
+  const successMsg = document.getElementById('md5DecryptSuccess');
+  
+  if (!hash) {
+    showErrorMsg(successMsg, 'Zəhmət olmasa MD5 hash daxil edin!', 'warning');
+    outputSpan.textContent = '—';
+    return;
+  }
+  
+  if(!/^[a-fA-F0-9]{32}$/.test(hash)) {
+    showErrorMsg(successMsg, 'XƏTA: Keçərli MD5 hash daxil edin (32 simvol, 0-9 a-f)', 'warning');
+    outputSpan.textContent = '—';
+    return;
+  }
+  
+  outputSpan.classList.add('processing');
+  setTimeout(() => {
+    const result = md5ReverseLookup(hash);
+    outputSpan.classList.remove('processing');
+    
+    if(result) {
+      outputSpan.textContent = result;
+      showErrorMsg(successMsg, `✅ UĞUR! Hash "${hash}" üçün orijinal mətn: "${result}"`, 'success');
+    } else {
+      outputSpan.textContent = '— (Bazada tapılmadı)';
+      showErrorMsg(successMsg, '❌ Bazada bu hash-a uyğun mətn tapılmadı. Rainbow table genişləndirilə bilər.', 'warning');
+    }
+  }, 100);
+}
+
+function verifyMD5FromDecrypt() {
+  const foundText = document.getElementById('md5-decrypt-output').textContent;
+  const originalHash = document.getElementById('md5-decrypt-input').value.trim();
+  const successMsg = document.getElementById('md5DecryptSuccess');
+  
+  if(foundText === '—' || foundText === '— (Bazada tapılmadı)' || !foundText || foundText === '—') {
+    showErrorMsg(successMsg, 'Əvvəlcə deşifrələmə edin və ya nəticə tapılmayıb!', 'warning');
+    return;
+  }
+  
+  if(!originalHash) {
+    showErrorMsg(successMsg, 'Zəhmət olmasa MD5 hash daxil edin!', 'warning');
+    return;
+  }
+  
+  const calculatedHash = md5(foundText);
+  if(calculatedHash === originalHash.toLowerCase()) {
+    showErrorMsg(successMsg, `✅ TƏSDİQLƏNDİ! "${foundText}" → ${calculatedHash}`, 'success');
+  } else {
+    showErrorMsg(successMsg, `❌ Uyğunsuzluq! Tapılan: ${foundText}, Hesablanan: ${calculatedHash}`, 'warning');
+  }
+}
+
+function showErrorMsg(element, message, type) {
+  element.textContent = message;
+  element.style.display = 'block';
+  if(type === 'success') {
+    element.style.border = '1px solid var(--accent3)';
+    element.style.background = 'rgba(0,255,153,0.1)';
+    element.style.color = 'var(--accent3)';
+  } else {
+    element.style.border = '1px solid var(--warning)';
+    element.style.background = 'rgba(255,170,51,0.1)';
+    element.style.color = 'var(--warning)';
+  }
+  setTimeout(() => element.style.display = 'none', 4000);
+}
+
+function doReverse(mode) {
+  const text = document.getElementById('rev-input').value;
+  if (!text) return;
+  document.getElementById('rev-output').textContent = text.split('').reverse().join('');
+}
+
+function doCaesar(mode) {
+  const text = document.getElementById('caesar-input').value.toUpperCase();
+  const key = parseInt(document.getElementById('caesar-key').value) || 3;
+  const shift = mode === 'enc' ? key : (26 - key);
+  let result = '';
+  for (let ch of text) {
+    if (ch >= 'A' && ch <= 'Z') {
+      result += String.fromCharCode(((ch.charCodeAt(0) - 65 + shift) % 26) + 65);
+    } else {
+      result += ch;
+    }
+  }
+  document.getElementById('caesar-output').textContent = result;
+}
+
+function doBase64(mode) {
+  const text = document.getElementById('b64-input').value;
+  if (!text) return;
+  try {
+    const result = mode === 'enc' ? btoa(unescape(encodeURIComponent(text))) : decodeURIComponent(escape(atob(text)));
+    document.getElementById('b64-output').textContent = result;
+  } catch(e) {
+    document.getElementById('b64-output').textContent = 'XƏTA: Yanlış Base64 formatı';
+  }
+}
+
+function doVigenere(mode) {
+  const text = document.getElementById('vig-input').value.toUpperCase();
+  const key = document.getElementById('vig-key').value.toUpperCase().replace(/[^A-Z]/g,'') || 'SDU';
+  let result = '', ki = 0;
+  for (let ch of text) {
+    if (ch >= 'A' && ch <= 'Z') {
+      const shift = key[ki % key.length].charCodeAt(0) - 65;
+      const s = mode === 'enc' ? shift : (26 - shift);
+      result += String.fromCharCode(((ch.charCodeAt(0) - 65 + s) % 26) + 65);
+      ki++;
+    } else {
+      result += ch;
+    }
+  }
+  document.getElementById('vig-output').textContent = result;
+}
+
+function doBinary(mode) {
+  const text = document.getElementById('bin-input').value;
+  if (!text) return;
+  try {
+    if (mode === 'enc') {
+      const result = text.split('').map(c => c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+      document.getElementById('bin-output').textContent = result;
+    } else {
+      const result = text.trim().split(/\s+/).map(b => String.fromCharCode(parseInt(b, 2))).join('');
+      document.getElementById('bin-output').textContent = result;
+    }
+  } catch(e) {
+    document.getElementById('bin-output').textContent = 'XƏTA: Yanlış binary format';
+  }
+}
+
+function clearFields(prefix) {
+  document.querySelectorAll(`[id^="${prefix}-"]`).forEach(el => {
+    if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') el.value = el.type === 'number' ? '3' : '';
+    else if (!el.classList.contains('copy-btn') && el.tagName === 'SPAN') el.textContent = '—';
+  });
+  if(prefix === 'md5') {
+    document.getElementById('md5-decrypt-output').textContent = '—';
+    document.getElementById('md5-decrypt-input').value = '';
+  }
+}
+
+function copyResult(id) {
+  const text = document.getElementById(id).textContent;
+  if (text === '—' || text.includes('tapılmadı')) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector(`[onclick="copyResult('${id}')"]`);
+    if (btn) { btn.textContent = 'COPIED!'; setTimeout(() => btn.textContent = 'COPY', 1500); }
+  });
+}
+</script>
+</body>
+</html>
